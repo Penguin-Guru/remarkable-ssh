@@ -45,6 +45,8 @@ Remarkable's local A.P.I. and web interface are slow and lack essential features
 - Include unsupported file types.
 
 
+Running `cache push` or `cache push` without any sync-related parameters will perform a full sync, including additions, deletions, and updates. Only updates can be achieved by specifying both `--no-add` and `--no-delete`.
+
 ## Set-up:
 
 For this script to work, you will need S.S.H. access to your Remarkable device.
