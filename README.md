@@ -3,9 +3,8 @@
 
 Remarkable's local A.P.I. and web interface are slow and lack essential features. I don't like cloud services and I couldn't find a script that worked, so I wrote my own. This is a work in progress but it already works very well for me. Please report any issues-- there may be differences between product models, software versions, and personal workflows.
 
-So far, known to work with:
+### Known to work with:
 - Remarkable Paper Pro (3.24.0.149)
-
 
 ### Dependencies:
 
@@ -17,9 +16,9 @@ So far, known to work with:
 - sed.
 
 
-### Usage:
+## Usage:
 
-## Operations:
+### Operations:
 
 - Help
 - Cache
@@ -35,7 +34,7 @@ So far, known to work with:
 - Mkdir
 - Move
 
-## Parameters:
+### Parameters:
 
 - Path to cache directory.
 - S.S.H. host value for Remarkable device.
@@ -46,7 +45,7 @@ So far, known to work with:
 - Include unsupported file types.
 
 
-### Set-up:
+## Set-up:
 
 For this script to work, you will need S.S.H. access to your Remarkable device.
 
