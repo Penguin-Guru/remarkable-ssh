@@ -538,10 +538,12 @@ function run_delete() {	## Delete a Remarkable object's file(s) (from the cache)
 
 	if ! is_string_uuid "$target"; then
 		local target_name="$target"
-		target="$(get_uuid_by_name "$target" "$cache")"
-		validate_string_not_empty "$target" "Failed to find UUID associated with target name: \"$target_name\""
+		## `... || true` is hack around `set -o errexit`.
+		target="$(get_uuid_by_name "$target" "$cache" || true)"
+		validate_string_not_empty "$target" \
+			"Failed to find UUID associated with target name: \"$target_name\""
 	fi
-	rm -r "$cache/$target"*
+	if ! rm -rv "$cache/$target"* ; then terminate; fi
 }
 
 function run_mkdir() {	## Make a Remarkable folder object (not filesystem directory) (in the cache).
