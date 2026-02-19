@@ -18,6 +18,8 @@ Remarkable's local A.P.I. and web interface are slow and lack essential features
 
 ## Usage:
 
+Syntax, operations, parameters, and some introductory notes are all output by `remarkable-ssh help`. In fact, the `help` is optional. What I have written here is intended to give prospective users a sense for what this script can do.
+
 ### Operations:
 
 - Help
@@ -44,8 +46,8 @@ Remarkable's local A.P.I. and web interface are slow and lack essential features
 - Only delete removed things.
 - Include unsupported file types.
 
-
 Running `cache push` or `cache push` without any sync-related parameters will perform a full sync, including additions, deletions, and updates. Only updates can be achieved by specifying both `--no-add` and `--no-delete`.
+
 
 ## Set-up:
 
