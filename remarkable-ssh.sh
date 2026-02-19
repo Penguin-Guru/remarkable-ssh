@@ -400,6 +400,8 @@ function diff_cache() {	## Compare local cache to remote device.
 	sanitised_XochitlDir=$(sed 's:[][\\/.^$*]:\\&:g' <<< "${XochitlDir@E}")
 	## The strings above are used to trim file paths to target directories.
 	## If "cache" has a parent directory with the same name, truncation may end there.
+	#
+	## Sed is also used to suppress lines for unchanged items and to cut out checksum strings.
 	diff --width="$(tput cols)" --suppress-common-lines \
 		--old-line-format='	%l	<++-->	.
 ' --new-line-format='	.	<--++>	%l
@@ -407,7 +409,7 @@ function diff_cache() {	## Compare local cache to remote device.
 ' \
 		<(find "$cache" -type f -exec md5sum {} + | sort -k 2 | sed "s/ .*${sanitised_cache}\// /") \
 		<(ssh "$host" "find \"$XochitlDir\" -type f -exec md5sum {} + | sort -k 2 | sed 's/ .*${sanitised_XochitlDir}\// /'") \
-		| sed -E 's/((^|>)\s*)[[[:lower:][:digit:]]+ +/\1/' \
+		| sed -E '/^[[:space:].]*$/d; s/((^|>)\s*)[[[:lower:][:digit:]]+ +/\1/' \
 		| column -t --output-separator='		' \
 			-C name="Local cache",right \
 			-C name="Difference" \
