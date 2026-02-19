@@ -112,7 +112,7 @@ function validate_cache() {
 
 function validate_host() {
 	## Currently, only a simple string not null check is performed.
-	if ! get_param 'host'; then
+	if ! get_param 'host' >/dev/null; then
 		echo 'Specify S.S.H. host for your Remarkable device.' >&2
 		terminate
 	fi
@@ -131,7 +131,7 @@ function validate_string_not_empty() {
 
 function is_function_defined() {
 	validate_string_not_empty "$1"
-	if declare -F "$1"; then return 0; fi	## True.
+	if declare -F "$1" >/dev/null 2>&1; then return 0; fi	## True.
 	return 1	## False.
 }
 
@@ -145,7 +145,7 @@ function get_param() {
 	if [[ ! -v "$1" ]]; then
 		return 1
 	fi
-	echo "$param"	## Empty string may be valid.
+	echo "$1"	## Empty string may be valid.
 	return 0
 }
 function get_necessary_param() {
@@ -814,9 +814,11 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 
 		## Accept flags without a specified val(ue) as boolean toggle switches.
 		if [[ -z "$val" ]]; then
-			param=1	## 1 == true. Not declared as integer type.
+			declare -g -i "$param"=1	## 1 == true. Not declared as integer type.
 			## If there a handler function is defined for this flag, run it now.
-			if is_function_defined "handle_bool_param_$param" > /dev/null ; then
+			echo "$key: \"$val\""
+			echo "${!param}: \"${param}\""
+			if is_function_defined "handle_bool_param_$param"; then
 				"handle_bool_param_$param"
 			fi
 			return
@@ -887,7 +889,7 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 			if
 				## First condition supports shell with `set -u`/`set -o nounset` enabled.
 				[[ -v "valid_ops["$arg"]" ]] \
-				&& is_function_defined "${valid_ops["$arg"]}" > /dev/null 2>&1
+				&& is_function_defined "${valid_ops["$arg"]}"
 			then
 				"${valid_ops["$arg"]}" "$@"
 				## Only accept one operation per invocation of this script.
