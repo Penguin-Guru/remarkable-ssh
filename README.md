@@ -57,6 +57,6 @@ In theory, this should work on any operating system so long as the dependencies 
 
 Once you've downloaded this script, run its `help` operation to get started. You are responsible for knowing what the commands you run will do. I strongly suggest running the `diff` sub-operations before any `push` or `pull` operations. This prints out what changes would be made without actually making them.
 
-You may also want to create a backup of the files on your device. That can be achieved by running `remarkable-ssh --cache=<path_to_backup_directory> --host=<ssh_target> --unsupported-files cache pull`, then running subsequent operations with a different cache directory. If you need to restore from the backup, just run the same command with `push` instead of `pull`.
+You may also want to create a backup of the files on your device. That can be achieved by running `remarkable-ssh --cache=<path_to_backup_directory> --host=<ssh_target> --unsupported-files cache pull`, then running subsequent operations with a different cache directory. If you need to restore from the backup directory, just run the same command with `push` instead of `pull`.
 
 
