@@ -365,15 +365,8 @@ function pull_cache() {	## Pull remote device to local cache.
 		echo -e 'Format is described in the rsync manual. See "--itemize-changes".\n'
 		SyncParams+=("${DiffSyncParams[@]}")
 	fi
-	if [[ "${cache: -1}" == '/' ]]; then
-		## Specified target ends with a slash.
-		## Copy remote directory.
-		rsync "${SyncParams[@]}" "$host:$XochitlDir" "$cache"
-	else
-		## Specified target does not end with a slash.
-		## Copy contents of remote directory.
-		rsync "${SyncParams[@]}" "$host:$XochitlDir/" "$cache"
-	fi
+	## Copy contents of remote directory, not the directory including its contents.
+	rsync "${SyncParams[@]}" "$host:$XochitlDir/" "$cache"
 }
 
 function push_cache() {	## Push local cache to remote device.
