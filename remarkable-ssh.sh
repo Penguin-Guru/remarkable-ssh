@@ -826,8 +826,6 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 		if [[ -z "$val" ]]; then
 			declare -g -i "$param"=1	## 1 == true. Not declared as integer type.
 			## If there a handler function is defined for this flag, run it now.
-			echo "$key: \"$val\""
-			echo "${!param}: \"${param}\""
 			if is_function_defined "handle_bool_param_$param"; then
 				"handle_bool_param_$param"
 			fi
