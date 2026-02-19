@@ -36,6 +36,10 @@ declare -A RmFileExt=(	## File types defined by Xochitl.
 	[content]='content'       ## Defines state of object (e.g. user preferences).
 	[local]='local'           ## Meta-content data? ("contentFormatVersion")
 	[thumbnails]='thumbnails' ## Thumbnail image(s). Always singular?
+	[png]='png'               ## Used for thumbnails in sub-directories?
+	[rm]='rm'                 ## "reMarkable .lines file" ("version=6")
+	[pagedata]='pagedata'
+	[epubindex]='epubindex'
 )
 declare -A RmObjectType=(	## Object types defined by Xochitl.
 	[folder]='CollectionType'
@@ -438,7 +442,7 @@ function run_cache() {	## Operations relating the local cache and remote device.
 				if ! get_param 'unsupported_files' >/dev/null; then
 					## Direct rsync to...
 					## Ignore unsupported file types.
-					for ext in "${RmFileExt[@]}"; do
+					for ext in "${RmFileExt[@]}" "${RmSupportedImportFileExt[@]}"; do
 						SyncParams+=("-f+ *.$ext")
 					done
 					SyncParams+=('-fH,! */')
