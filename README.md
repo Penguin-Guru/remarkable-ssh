@@ -22,29 +22,29 @@ Syntax, operations, parameters, and some introductory notes are all output by `r
 
 ### Operations:
 
-- Help
-- Cache
-  - Push
-    - Diff
-  - Pull
-    - Diff
-  - Diff (table format)
-- List
-- Add
-- Rename
-- Delete
-- Mkdir
-- Move
+- `Help` (prints usage information).
+- `Cache` scale operations.
+  - `Push` cache directory to Remarkable device.
+    - `Diff` (rsync format)
+  - `Pull` from Remarkable device to cache directory.
+    - `Diff` (rsync format)
+  - `Diff` (neutral table format)
+- `List` objects, optionally within a folder and with optional recursive depth limit.
+- `Add` files of supported types.
+- `Rename` objects.
+- `Delete` objects.
+- `Make folder` objects.
+- `Move objects` with respect to folders.
 
 ### Parameters:
 
-- Path to cache directory.
-- S.S.H. host value for Remarkable device.
-- Do not add new things.
-- Do not delete anything.
-- Only add new things.
-- Only delete removed things.
-- Include unsupported file types.
+- `Path` to cache directory.
+- S.S.H. `host` value for Remarkable device.
+- Do `not add` new things.
+- Do `not delete` anything.
+- `Only add` new things.
+- `Only delete` removed things.
+- `Include unsupported` file types.
 
 Running `cache push` or `cache push` without any sync-related parameters will perform a full sync, including additions, deletions, and updates. Only updates can be achieved by specifying both `--no-add` and `--no-delete`.
 
