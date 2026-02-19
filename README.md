@@ -53,7 +53,7 @@ Running `cache push` or `cache push` without any sync-related parameters will pe
 
 For this script to work, you will need S.S.H. access to your Remarkable device.
 
-I've described the requirements for and process of connecting to Remarkable devices from a Linux host [here](https://wiki.gentoo.org/wiki/User:Penguin-Guru/Remarkable). Note that distribution kernels probably already support the necessary drivers and do not need to be rebuilt. In theory, this should work on any operating system so long as the dependencies listed above are available. I do not know what Windows Subsystem for Linux provides.
+In theory, this should work on any operating system so long as the dependencies listed above are available. I do not know what Windows Subsystem for Linux provides. I have described the requirements for and process of connecting to Remarkable devices from a Linux host [here](https://wiki.gentoo.org/wiki/User:Penguin-Guru/Remarkable). Note that distribution kernels probably already support the necessary drivers and do not need to be rebuilt.
 
 Once you've downloaded this script, run its `help` operation to get started. You are responsible for knowing what the commands you run will do. I strongly suggest running the `diff` sub-operations before any `push` or `pull` operations. This prints out what changes would be made without actually making them.
 
