@@ -377,8 +377,15 @@ function push_cache() {	## Push local cache to remote device.
 		echo -e 'Format is described in the rsync manual. See "--itemize-changes".\n'
 		rsync "${SyncParams[@]}" "${DiffSyncParams[@]}" "$cache/" "$host:$XochitlDir" || return 1
 	else
+		ssh "$host" systemctl stop xochitl || {
+			echo 'Failed to stop remote device service: xochitl' >&2
+			terminate
+		}
 		rsync "${SyncParams[@]}" "$cache/" "$host:$XochitlDir" || return 1
-		ssh "$host" systemctl restart xochitl
+		ssh "$host" systemctl start xochitl || {
+			echo 'Failed to start remote device service: xochitl' >&2
+			terminate
+		}
 	fi
 }
 
