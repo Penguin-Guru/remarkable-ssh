@@ -22,8 +22,8 @@ Syntax, operations, parameters, and some introductory notes are all output by `r
 
 ### Operations:
 
-- `Help` (prints usage information).
-- `Cache` scale operations.
+- `Help` by printing usage information.
+- `Cache` scope operations.
   - `Push` cache directory to Remarkable device.
     - `Diff` (rsync format)
   - `Pull` from Remarkable device to cache directory.
