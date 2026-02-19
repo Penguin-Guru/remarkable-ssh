@@ -394,10 +394,14 @@ function push_cache() {	## Push local cache to remote device.
 }
 
 function diff_cache() {	## Compare local cache to remote device.
+	## Strip at most one trailing forward slash from the paths, if present.
+	## This is necessary because we append a slash during the path truncation.
+	local cache="${cache/%\/}"
+	local xochitl_dir="${XochitlDir/%\/}"
 	## Sanitise strings for bash (@E) and left side of sed substitution expression.
 	## https://unix.stackexchange.com/questions/129059/how-to-ensure-that-string-interpolated-into-sed-substitution-escapes-all-metac/129063#129063
-	sanitised_cache=$(sed 's:[][\\/.^$*]:\\&:g' <<< "${cache@E}")
-	sanitised_XochitlDir=$(sed 's:[][\\/.^$*]:\\&:g' <<< "${XochitlDir@E}")
+	local sanitised_cache=$(sed 's:[][\\/.^$*]:\\&:g' <<< "${cache@E}")
+	local sanitised_xochitl_dir=$(sed 's:[][\\/.^$*]:\\&:g' <<< "${xochitl_dir@E}")
 	## The strings above are used to trim file paths to target directories.
 	## If "cache" has a parent directory with the same name, truncation may end there.
 	#
@@ -408,7 +412,7 @@ function diff_cache() {	## Compare local cache to remote device.
 ' --unchanged-line-format='	.	.	.
 ' \
 		<(find "$cache" -type f -exec md5sum {} + | sort -k 2 | sed "s/ .*${sanitised_cache}\// /") \
-		<(ssh "$host" "find \"$XochitlDir\" -type f -exec md5sum {} + | sort -k 2 | sed 's/ .*${sanitised_XochitlDir}\// /'") \
+		<(ssh "$host" "find \"$xochitl_dir\" -type f -exec md5sum {} + | sort -k 2 | sed 's/ .*${sanitised_xochitl_dir}\// /'") \
 		| sed -E '/^[[:space:].]*$/d; s/((^|>)\s*)[[[:lower:][:digit:]]+ +/\1/' \
 		| column -t --output-separator='		' \
 			-C name="Local cache",right \
