@@ -791,8 +791,9 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 	}
 	function handle_bool_param_dev() {	## Enable mode for parameter: 'dev'
 		## Append functions starting with "dev_" to array of valid operations.
+		## Underscores in function names are translated to hyphens for invocation.
 		while read -r fn; do
-			PrimaryOperations+=(["$fn"]="$fn")
+			PrimaryOperations+=(["${fn//_/-}"]="dev_$fn")
 		done < <(compgen -A function -X '!dev_*' | cut -c 5-)	## 5=sizeof("dev_")
 	}
 	function handle_bool_param_only_add() {
