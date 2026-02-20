@@ -46,6 +46,7 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 ## Append functions starting with "dev_" to array of valid operations.
 ## Underscores in function names are translated to hyphens for invocation.
 while read -r fn; do
-	PrimaryOperations+=(["${fn//_/-}"]="dev_$fn")
-done < <(compgen -A function -X '!dev_*' | cut -c 5-)	## 5=sizeof("dev_")
+	Operations+=(["${fn//_/-}"]="dev_$fn")
+done < <(compgen -A function -X '!dev_*')
+#done < <(compgen -A function -X '!dev_*' | cut -c 5-)	## 5=sizeof("dev_")
 
