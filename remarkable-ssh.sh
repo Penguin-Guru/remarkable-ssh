@@ -678,6 +678,17 @@ function run_print_help() {
 ##
 #
 
+function load_param_set() {
+	declare -g -n valid_params="$1"
+	for f in "${valid_params[@]}"; do
+		## "-v" condition supports shell with `set -u`/`set -o nounset` enabled.
+		if [[ -v "$f" && -n "${!f}" ]]; then
+			echo "Hard-coded parameter variable already in use: \"$f\"" >&2
+			terminate
+		fi
+	done
+}
+
 
 #
 ## Parsing helper functions:
@@ -882,13 +893,7 @@ function main() {
 		[debug]='debug'                          ##   Bool: Enable bash debug output.
 		[script]='source_script'                 ## String: Path to script that should be sourced.
 	)
-	for f in "${Params[@]}"; do
-		## "-v" condition supports shell with `set -u`/`set -o nounset` enabled.
-		if [[ -v "$f" && -n "${!f}" ]]; then
-			echo "Hard-coded parameter variable already in use: \"$f\"" >&2
-			terminate
-		fi
-	done
+	load_param_set "Params"
 
 
 	## Map C.L.I. arguments to operational run modes.
