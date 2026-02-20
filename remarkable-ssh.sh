@@ -673,8 +673,95 @@ function run_print_help() {
 
 
 #
-## Initialisation operations:
+##
+### Initialisation functions:
+##
 #
+
+
+#
+## Parsing helper functions:
+#
+
+function parse_param() {
+	local key="$1"
+	local val="$2"
+
+	## Validate that specified key is known/handled (was set/assigned/initialised).
+	local -n param
+	for p in "${!valid_params[@]}"; do
+		if [[ "$p" == "$key" ]]; then
+			param="valid_params[$key]"
+			break
+		fi
+	done
+	if [[ ! -R 'param' ]]; then
+		echo "Invalid parameter: \"$key\"" >&2
+		terminate
+	fi
+
+	## Check whether a handler function matching the parameter name exists.
+	if is_function_defined "handle_param_$param"; then
+		## Run it immediately with the supplied value as its first argument.
+		## Terminate on non-zero return status from that function.
+		"handle_param_$param" "$val" || terminate
+		## No additional actions are taken for these parameters.
+		return
+	fi
+
+	## The remaining parameter types are boolean and string.
+	## Both are assigned to global variables.
+
+	## Protect against namespace conflicts with caller's environment.
+	if [[ -v "$param" ]]; then
+		echo "Value already assigned to parameter variable: \"$param\"." >&2
+		echo 'This could be a result of duplicate specification or namespace conflict.'
+		terminate
+	fi
+
+	## Accept flags without a specified val(ue) as boolean toggle switches.
+	if [[ -z "$val" ]]; then
+		declare -g -i "$param"=1	## 1 == true. Not declared as integer type.
+		## If there a handler function is defined for this flag, run it now.
+		if is_function_defined "handle_bool_param_$param"; then
+			"handle_bool_param_$param"
+		fi
+		return
+	fi
+
+	declare -g "$param"="$val" || {
+		echo "Failed to assign value to parameter: \"$param\"" >&2
+		echo -e "\tValue was: \"$val\""
+		terminate
+	}
+}
+
+function parse_flag() {
+	## $1: Flag string, including prefix, delimiter, and value if applicable.
+	local key
+	local val=
+
+	local FlagPrefixSymbol='-'
+	local FlagKeyValDelim='='
+
+	## Count length of flag prefix.
+	local -i i=0
+	while [[ "${1:$i:1}" == "$FlagPrefixSymbol" ]]; do
+		i+=1
+		if (( $i > 2 )); then
+			echo "Invalid prefix ($i+) for supposed flag: \"$1\""
+			terminate
+		fi
+	done
+	## assert(i>0)
+
+	IFS="$FlagKeyValDelim" read -r key val <<< "${1:$i}" || {
+		echo "Failed to parse flag parameter: \"$1\"" >&2
+		terminate
+	}
+
+	parse_param "$key" "$val"
+}
 
 function parse_config_file() {
 	## Multiple delim characters should be interpreted independently.
@@ -700,6 +787,68 @@ function parse_config_file() {
 }
 
 
+#
+## Parameter handler functions:
+#
+
+function handle_bool_param_only_add() {
+	if ((only_add)); then
+		echo 'Incompatible sync parameters were specified.' >&2
+		echo -e \
+			'\tno-add\n' \
+			'\tonly-add\n'
+		terminate
+	fi
+	SyncParams+=('--ignore-existing')
+	## Does this also delete receiver-side files not on the sender?
+}
+
+function handle_bool_param_no_add() {
+	if ((only_add)); then
+		echo 'Incompatible sync parameters were specified.' >&2
+		echo -e \
+			'\tonly-add\n' \
+			'\tno-add\n'
+		terminate
+	fi
+	SyncParams+=('--existing')
+}
+
+function handle_bool_param_only_delete() {
+	if ((only_add)); then
+		echo 'Incompatible sync parameters were specified.' >&2
+		echo -e \
+			'\tonly-add\n' \
+			'\tonly-delete\n'
+		terminate
+	fi
+	SyncParams+=(
+		'--existing'
+		'--ignore-existing'
+	)
+}
+
+function handle_bool_param_debug() {	## Enable mode for parameter: 'debug'
+	set -o xtrace
+}
+
+function handle_param_source_script() {
+	if ((${#@} <= 0)); then
+		echo 'Can not source unspecified script.' >&2
+		terminate
+	fi
+	local file_to_source="$1"
+	if [[ ! -f "$file_to_source" ]]; then
+		echo "Requested file to source does not exist: \"$file_to_source\"" >&2
+		terminate
+	fi
+	if ! source "$file_to_source"; then
+		echo "Failed to source requested file: \"$file_to_source\"" >&2
+		terminate
+	fi
+}
+
+
 
 #
 ##
@@ -711,15 +860,12 @@ function parse_config_file() {
 	set -o nounset
 	shopt -s nullglob	## Ignore globs/wildcards that match nothing.
 
-
 	## Parameters are declared as global variables (if not already in use).
 	## String values provided at run-time are assigned to their respective variable.
 	## If no value is provided at run-time:
 	## 	The value "1" (representing true/on) is assigned.
 	## 	If a corresponding handler function is defined, it is run positionally.
 	## 		Effects apply only for proceeding parameters and operations.
-	declare FlagPrefixSymbol='-'
-	declare FlagKeyValDelim='='
 
 	##   Key: Argument string to identify parameter.
 	## Value: Name of handler function OR script-global variable to assign.
@@ -742,135 +888,6 @@ function parse_config_file() {
 			terminate
 		fi
 	done
-	function handle_bool_param_only_add() {
-		if ((only_add)); then
-			echo 'Incompatible sync parameters were specified.' >&2
-			echo -e \
-				'\tno-add\n' \
-				'\tonly-add\n'
-			terminate
-		fi
-		SyncParams+=('--ignore-existing')
-		## Does this also delete receiver-side files not on the sender?
-	}
-	function handle_bool_param_no_add() {
-		if ((only_add)); then
-			echo 'Incompatible sync parameters were specified.' >&2
-			echo -e \
-				'\tonly-add\n' \
-				'\tno-add\n'
-			terminate
-		fi
-		SyncParams+=('--existing')
-	}
-	function handle_bool_param_only_delete() {
-		if ((only_add)); then
-			echo 'Incompatible sync parameters were specified.' >&2
-			echo -e \
-				'\tonly-add\n' \
-				'\tonly-delete\n'
-			terminate
-		fi
-		SyncParams+=(
-			'--existing'
-			'--ignore-existing'
-		)
-	}
-	function handle_bool_param_debug() {	## Enable mode for parameter: 'debug'
-		set -o xtrace
-	}
-	function handle_param_source_script() {
-		if ((${#@} <= 0)); then
-			echo 'Can not source unspecified script.' >&2
-			terminate
-		fi
-		local file_to_source="$1"
-		if [[ ! -f "$file_to_source" ]]; then
-			echo "Requested file to source does not exist: \"$file_to_source\"" >&2
-			terminate
-		fi
-		if ! source "$file_to_source"; then
-			echo "Failed to source requested file: \"$file_to_source\"" >&2
-			terminate
-		fi
-	}
-
-	function parse_param() {
-		local key="$1"
-		local val="$2"
-
-		## Validate that specified key is known/handled (was set/assigned/initialised).
-		local -n param
-		for p in "${!valid_params[@]}"; do
-			if [[ "$p" == "$key" ]]; then
-				param="valid_params[$key]"
-				break
-			fi
-		done
-		if [[ ! -R 'param' ]]; then
-			echo "Invalid parameter: \"$key\"" >&2
-			terminate
-		fi
-
-		## Check whether a handler function matching the parameter name exists.
-		if is_function_defined "handle_param_$param"; then
-			## Run it immediately with the supplied value as its first argument.
-			## Terminate on non-zero return status from that function.
-			"handle_param_$param" "$val" || terminate
-			## No additional actions are taken for these parameters.
-			return
-		fi
-
-		## The remaining parameter types are boolean and string.
-		## Both are assigned to global variables.
-
-		## Protect against namespace conflicts with caller's environment.
-		if [[ -v "$param" ]]; then
-			echo "Value already assigned to parameter variable: \"$param\"." >&2
-			echo 'This could be a result of duplicate specification or namespace conflict.'
-			terminate
-		fi
-
-		## Accept flags without a specified val(ue) as boolean toggle switches.
-		if [[ -z "$val" ]]; then
-			declare -g -i "$param"=1	## 1 == true. Not declared as integer type.
-			## If there a handler function is defined for this flag, run it now.
-			if is_function_defined "handle_bool_param_$param"; then
-				"handle_bool_param_$param"
-			fi
-			return
-		fi
-
-		declare -g "$param"="$val" || {
-			echo "Failed to assign value to parameter: \"$param\"" >&2
-			echo -e "\tValue was: \"$val\""
-			terminate
-		}
-	}
-	function parse_flag() {
-		## $1: Flag string, including prefix, delimiter, and value if applicable.
-		local key
-		local val=
-
-		## Count length of flag prefix.
-		local -i i=0
-		while [[ "${1:$i:1}" == "$FlagPrefixSymbol" ]]; do
-			i+=1
-			if (( $i > 2 )); then
-				echo "Invalid prefix ($i+) for supposed flag: \"$1\""
-				terminate
-			fi
-		done
-		## assert(i>0)
-
-		IFS=\= read -r key val <<< "${1:$i}" || {
-			echo "Failed to parse flag parameter: \"$1\"" >&2
-			terminate
-		}
-
-		parse_param "$key" "$val"
-	}
-
 
 
 	## Map C.L.I. arguments to operational run modes.
