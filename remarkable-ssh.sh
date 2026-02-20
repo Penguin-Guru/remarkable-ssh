@@ -916,27 +916,23 @@ function main() {
 	## Parse positional, C.L.I. arguments.
 	for arg in "$@"; do
 		shift
-		if [[ "${arg:0:1}" == "-" ]]; then
-			## Argument is a flag (prefixed with one or more hyphens).
+		if parse_flag "$arg"; then continue; fi
+		## Argument is not a flag (prefixed with one or more hyphens).
+		## It should be an operation, if valid.
+		arg="${arg,,}"	## No need for case sensitivity in command namespace.
+		if
+			## First condition supports shell with `set -u`/`set -o nounset` enabled.
+			[[ -v "valid_ops["$arg"]" ]] \
+			&& is_function_defined "${valid_ops["$arg"]}"
+		then
 			## assert [[ ! -R 'run_op' ]]
-			parse_flag "$arg"	## Terminates on failure.
+			run_op="valid_ops["$arg"]"
+			## Only accept one operation per invocation of this script.
+			break
 		else
-			## Argument is not a flag (prefixed with one or more hyphens).
-			arg="${arg,,}"	## No need for case sensitivity in command namespace.
-			if
-				## First condition supports shell with `set -u`/`set -o nounset` enabled.
-				[[ -v "valid_ops["$arg"]" ]] \
-				&& is_function_defined "${valid_ops["$arg"]}"
-			then
-				## assert [[ ! -R 'run_op' ]]
-				run_op="valid_ops["$arg"]"
-				## Only accept one operation per invocation of this script.
-				break
-			else
-				echo "Invalid operation: \"$arg\"" >&2
-				print_options "${!valid_ops}" 'Operations'
-				terminate
-			fi
+			echo "Invalid operation: \"$arg\"" >&2
+			print_options "${!valid_ops}" 'Operations'
+			terminate
 		fi
 	done
 
