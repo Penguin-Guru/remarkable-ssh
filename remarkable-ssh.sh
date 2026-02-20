@@ -871,9 +871,9 @@ function main() {
 	##   Key: Argument string to identify parameter.
 	## Value: Name of handler function OR script-global variable to assign.
 	local -A MainParams=(	## Declared as script-global variables (if not already in use).
+		[config]='config_file'                   ## String: Path to optional config file.
 		[cache]='cache'                          ## String: Path to cache directory.
 		[host]='host'                            ## String: S.S.H. host value for Remarkable device.
-		[config]='config_file'                   ## String: Path to optional config file.
 		[no-add]='no_add'                        ##   Bool: Only update or delete existing things.
 		[no-delete]='no_delete'                  ##   Bool: Do not delete anything.
 		[only-add]='only_add'                    ##   Bool: Do not delete or over-write anything.
