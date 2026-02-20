@@ -742,9 +742,6 @@ function parse_config_file() {
 			terminate
 		fi
 	done
-	function handle_bool_param_debug() {	## Enable mode for parameter: 'debug'
-		set -o xtrace
-	}
 	function handle_bool_param_only_add() {
 		if ((only_add)); then
 			echo 'Incompatible sync parameters were specified.' >&2
@@ -778,6 +775,9 @@ function parse_config_file() {
 			'--existing'
 			'--ignore-existing'
 		)
+	}
+	function handle_bool_param_debug() {	## Enable mode for parameter: 'debug'
+		set -o xtrace
 	}
 	function handle_param_source_script() {
 		if ((${#@} <= 0)); then
