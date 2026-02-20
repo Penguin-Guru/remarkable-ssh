@@ -71,5 +71,5 @@ The config file syntax is very simple:
 - Whitespace leading and trailing each line is trimmed.
 - Whitespace surrounding the '=' symbol is trimmed.
 - If the first non-whitespace character on a line is the '[#](https://en.wikipedia.org/wiki/Number_sign)' symbol, the line is ignored.
-- If the first character in a value string is a [tilde (~)](https://en.wikipedia.org/wiki/Tilde), it is replaced with the value of "$HOME" (if defined and not empty).
+- If the first two characters in a value string are a [tilde (~)](https://en.wikipedia.org/wiki/Tilde) and then a forward slash, that tilde is [expanded by your shell](https://www.gnu.org/software/bash/manual/html_node/Tilde-Expansion.html).
 
