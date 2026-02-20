@@ -909,10 +909,7 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 		[move]='run_move'
 		[help]='run_print_help'
 	)
-	declare -A DevOperations=(
-		[test_fn]='test_fn'
-		[list_nop_fn]='list_nop_fn'
-	)
+
 	declare -n -g valid_ops='PrimaryOperations'
 	declare -n -g valid_params='MainParams'
 	declare -n run_op
