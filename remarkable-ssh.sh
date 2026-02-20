@@ -897,8 +897,8 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 
 
 	## Map C.L.I. arguments to operational run modes.
-	## 	Key: (C.L.I./config argument) specifier to invoke call.
-	## 	Val: (Primary operation) handler function.
+	## 	Key: Argument string to invoke call.
+	## 	Val: Handler function name.
 	declare -A PrimaryOperations=(
 		[cache]='run_cache'
 		[list]='run_list_directory'
