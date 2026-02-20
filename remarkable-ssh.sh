@@ -870,7 +870,7 @@ function main() {
 
 	##   Key: Argument string to identify parameter.
 	## Value: Name of handler function OR script-global variable to assign.
-	local -A MainParams=(	## Declared as script-global variables (if not already in use).
+	local -A Params=(
 		[config]='config_file'                   ## String: Path to optional config file.
 		[cache]='cache'                          ## String: Path to cache directory.
 		[host]='host'                            ## String: S.S.H. host value for Remarkable device.
@@ -882,7 +882,7 @@ function main() {
 		[debug]='debug'                          ##   Bool: Enable bash debug output.
 		[script]='source_script'                 ## String: Path to script that should be sourced.
 	)
-	for f in "${MainParams[@]}"; do
+	for f in "${Params[@]}"; do
 		## "-v" condition supports shell with `set -u`/`set -o nounset` enabled.
 		if [[ -v "$f" && -n "${!f}" ]]; then
 			echo "Hard-coded parameter variable already in use: \"$f\"" >&2
@@ -894,7 +894,7 @@ function main() {
 	## Map C.L.I. arguments to operational run modes.
 	## 	Key: Argument string to invoke call.
 	## 	Val: Handler function name.
-	local -A PrimaryOperations=(
+	local -A Operations=(
 		[cache]='run_cache'
 		[list]='run_list_directory'
 		[delete]='run_delete'
@@ -905,8 +905,7 @@ function main() {
 		[help]='run_print_help'
 	)
 
-	declare -n -g valid_ops='PrimaryOperations'
-	declare -n -g valid_params='MainParams'
+	declare -n -g valid_ops='Operations'
 	local -n run_op
 
 	## Parse positional, C.L.I. arguments.
