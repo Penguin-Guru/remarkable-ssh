@@ -736,15 +736,12 @@ function parse_param() {
 	}
 }
 
+
 function parse_flag() {
 	## $1: Flag string, including prefix, delimiter, and value if applicable.
-	local key
-	local val=
-
-	local FlagPrefixSymbol='-'
-	local FlagKeyValDelim='='
 
 	## Count length of flag prefix.
+	local FlagPrefixSymbol='-'
 	local -i i=0
 	while [[ "${1:$i:1}" == "$FlagPrefixSymbol" ]]; do
 		i+=1
@@ -753,14 +750,18 @@ function parse_flag() {
 			terminate
 		fi
 	done
-	## assert(i>0)
+	if ((i == 0)); then return 1; fi
+
+	local key
+	local val=
+	local FlagKeyValDelim='='
 
 	IFS="$FlagKeyValDelim" read -r key val <<< "${1:$i}" || {
 		echo "Failed to parse flag parameter: \"$1\"" >&2
 		terminate
 	}
 
-	parse_param "$key" "$val"
+	parse_param "$key" "$val"	## Terminates on failure.
 }
 
 function parse_config_file() {
