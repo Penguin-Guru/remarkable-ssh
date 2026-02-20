@@ -925,15 +925,13 @@ function main() {
 			[[ -v "valid_ops["$arg"]" ]] \
 			&& is_function_defined "${valid_ops["$arg"]}"
 		then
-			## assert [[ ! -R 'run_op' ]]
 			run_op="valid_ops["$arg"]"
 			## Only accept one operation per invocation of this script.
 			break
-		else
-			echo "Invalid operation: \"$arg\"" >&2
-			print_options "${!valid_ops}" 'Operations'
-			terminate
 		fi
+		echo "Invalid operation: \"$arg\"" >&2
+		print_options "${!valid_ops}" 'Operations'
+		terminate
 	done
 
 	## Parse config file after parameters, so path can be specified via C.L.I.
