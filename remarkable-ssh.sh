@@ -939,7 +939,7 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 				break
 			else
 				echo "Invalid operation: \"$arg\"" >&2
-				print_options "${valid_ops[@]}" 'Operations'
+				print_options "${!valid_ops}" 'Operations'
 				terminate
 			fi
 		fi
