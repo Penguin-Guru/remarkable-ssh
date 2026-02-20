@@ -455,7 +455,9 @@ function run_cache() {	## Operations relating the local cache and remote device.
 				return "$?"
 			fi
 		fi
-		echo "Invalid cache operation: \"$1\"" >&2
+		if [[ "${1,,}" != 'help' ]]; then
+			echo "Invalid cache operation: \"$1\"" >&2
+		fi
 	fi
 	local -n ptr='Operations'
 	print_options "${!ptr}" 'Operations'
