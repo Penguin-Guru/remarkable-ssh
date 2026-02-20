@@ -700,52 +700,6 @@ function parse_config_file() {
 
 
 #
-## Developer/debug operations:
-#
-
-function dev_test_fn() {	## Directly run a specific function. Used for development testing.
-	if [[ ! ( -v '1' && -n "$1" ) ]]; then
-		echo 'No target function name was provided to `test_fn`.' >&2
-		terminate
-	fi
-	local fn="$1"
-	if is_function_defined "$fn"; then
-		shift
-		"$fn" "$@"
-	else
-		echo "No definition for specified function: \"$fn\""
-		terminate
-	fi
-}
-
-function dev_list_nop_fn() {	## List functions not included in the PrimaryOperations array. Used for development testing.
-	local -a nop_fns=()
-	while read -r line; do
-		## Buffer only the last (right-most) whitespace delimited string.
-		buff="${line##* }"
-		for op in "${PrimaryOperations[@]}"; do
-			if [[ "$op" == "$buff" ]]; then
-				## Skip this function name.
-				continue 2
-			fi
-		done
-		## Buffered function name is not in PrimaryOperations array.
-		nop_fns+=("$buff")
-	done < <(declare -F)
-
-	if (( ${#nop_fns} )); then
-		echo 'Defined functions not declared in PrimaryOperations array:'
-		for fn in "${nop_fns[@]}"; do
-			echo -e "\t$fn"
-		done
-	else
-		echo 'No functions defined other than those in the PrimaryOperations array.'
-	fi
-}
-
-
-
-#
 ##
 ### Main:
 ##
@@ -766,7 +720,7 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 	declare FlagKeyValDelim='='
 
 	##   Key: Argument string to identify parameter.
-	## Value: Name of script-global variable to assign. Must not already be in use.
+	## Value: Name of handler function OR script-global variable to assign.
 	declare -A MainParams=(	## Declared as script-global variables (if not already in use).
 		[cache]='cache'                          ## String: Path to cache directory.
 		[host]='host'                            ## String: S.S.H. host value for Remarkable device.
@@ -777,7 +731,7 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 		[only-delete]='only_delete'              ##   Bool: Do not add or over-write anything.
 		[unsupported-files]='unsupported_files'  ##   Bool: Remove unsupported files and empty directories.
 		[debug]='debug'                          ##   Bool: Enable bash debug output.
-		[dev]='dev'                              ##   Bool: Enable developer operations.
+		[script]='source_script'                 ## String: Path to script that should be sourced.
 	)
 	for f in "${MainParams[@]}"; do
 		## "-v" condition supports shell with `set -u`/`set -o nounset` enabled.
@@ -788,13 +742,6 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 	done
 	function handle_bool_param_debug() {	## Enable mode for parameter: 'debug'
 		set -o xtrace
-	}
-	function handle_bool_param_dev() {	## Enable mode for parameter: 'dev'
-		## Append functions starting with "dev_" to array of valid operations.
-		## Underscores in function names are translated to hyphens for invocation.
-		while read -r fn; do
-			PrimaryOperations+=(["${fn//_/-}"]="dev_$fn")
-		done < <(compgen -A function -X '!dev_*' | cut -c 5-)	## 5=sizeof("dev_")
 	}
 	function handle_bool_param_only_add() {
 		if ((only_add)); then
@@ -830,6 +777,21 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 			'--ignore-existing'
 		)
 	}
+	function handle_param_source_script() {
+		if ((${#@} <= 0)); then
+			echo 'Can not source unspecified script.' >&2
+			terminate
+		fi
+		local file_to_source="$1"
+		if [[ ! -f "$file_to_source" ]]; then
+			echo "Requested file to source does not exist: \"$file_to_source\"" >&2
+			terminate
+		fi
+		if ! source "$file_to_source"; then
+			echo "Failed to source requested file: \"$file_to_source\"" >&2
+			terminate
+		fi
+	}
 
 	function parse_param() {
 		local key="$1"
@@ -847,6 +809,18 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 			echo "Invalid parameter: \"$key\"" >&2
 			terminate
 		fi
+
+		## Check whether a handler function matching the parameter name exists.
+		if is_function_defined "handle_param_$param"; then
+			## Run it immediately with the supplied value as its first argument.
+			## Terminate on non-zero return status from that function.
+			"handle_param_$param" "$val" || terminate
+			## No additional actions are taken for these parameters.
+			return
+		fi
+
+		## The remaining parameter types are boolean and string.
+		## Both are assigned to global variables.
 
 		## Protect against namespace conflicts with caller's environment.
 		if [[ -v "$param" ]]; then
