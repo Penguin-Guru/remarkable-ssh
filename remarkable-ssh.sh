@@ -774,6 +774,8 @@ function parse_config_file() {
 			''|["$LineCommentDelim"]) continue ;;
 		esac
 		## Split line into key/value pair.
+		local key
+		local val=
 		IFS="$ConfigKeyValDelim" read -r key val <<< "$line" || return 1
 		## Strip whitespace that was surrounding ConfigKeyValDelim.
 		read -r key <<< "$key"
