@@ -896,12 +896,9 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 
 
 
-	#
 	## Map C.L.I. arguments to operational run modes.
 	## 	Key: (C.L.I./config argument) specifier to invoke call.
 	## 	Val: (Primary operation) handler function.
-	#
-
 	declare -A PrimaryOperations=(
 		[cache]='run_cache'
 		[list]='run_list_directory'
@@ -919,6 +916,8 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 	declare -n -g valid_ops='PrimaryOperations'
 	declare -n -g valid_params='MainParams'
 	declare -n run_op
+
+	## Parse positional, C.L.I. arguments.
 	for arg in "$@"; do
 		shift
 		if [[ "${arg:0:1}" == "-" ]]; then
