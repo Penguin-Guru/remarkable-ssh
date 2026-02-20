@@ -671,6 +671,35 @@ function run_print_help() {
 
 
 #
+## Initialisation operations:
+#
+
+function parse_config_file() {
+	## Multiple delim characters should be interpreted independently.
+	local ConfigKeyValDelim='='
+	local LineCommentDelim='#'
+	while read -r line; do
+		## Whitespace leading or trailing line has been stripped.
+		## Skip empty lines and comment lines.
+		case ${line:0:1} in
+			''|["$LineCommentDelim"]) continue ;;
+		esac
+		## Split line into key/value pair.
+		IFS="$ConfigKeyValDelim" read -r key val <<< "$line" || return 1
+		## Strip whitespace that was surrounding ConfigKeyValDelim.
+		read -r key <<< "$key"
+		read -r val <<< "$val"
+		## If value begins with tilde slash, let shell expand it.
+		if [[ "${val:0:2}" == '~/' ]]; then
+			val=~/"${val:2}"
+		fi
+		parse_param "$key" "$val" || return 1
+	done < "$config_file"
+}
+
+
+
+#
 ## Developer/debug operations:
 #
 
@@ -741,6 +770,7 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 	declare -A MainParams=(	## Declared as script-global variables (if not already in use).
 		[cache]='cache'                          ## String: Path to cache directory.
 		[host]='host'                            ## String: S.S.H. host value for Remarkable device.
+		[config]='config_file'                   ## String: Path to optional config file.
 		[no-add]='no_add'                        ##   Bool: Only update or delete existing things.
 		[no-delete]='no_delete'                  ##   Bool: Do not delete anything.
 		[only-add]='only_add'                    ##   Bool: Do not delete or over-write anything.
@@ -888,10 +918,12 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 	)
 	declare -n -g valid_ops='PrimaryOperations'
 	declare -n -g valid_params='MainParams'
+	declare -n run_op
 	for arg in "$@"; do
 		shift
 		if [[ "${arg:0:1}" == "-" ]]; then
 			## Argument is a flag (prefixed with one or more hyphens).
+			## assert [[ ! -R 'run_op' ]]
 			parse_flag "$arg"	## Terminates on failure.
 		else
 			## Argument is not a flag (prefixed with one or more hyphens).
@@ -901,9 +933,10 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 				[[ -v "valid_ops["$arg"]" ]] \
 				&& is_function_defined "${valid_ops["$arg"]}"
 			then
-				"${valid_ops["$arg"]}" "$@"
+				## assert [[ ! -R 'run_op' ]]
+				run_op="valid_ops["$arg"]"
 				## Only accept one operation per invocation of this script.
-				exit	## Return status of previous command.
+				break
 			else
 				echo "Invalid operation: \"$arg\"" >&2
 				print_options "${valid_ops[@]}" 'Operations'
@@ -911,6 +944,43 @@ function dev_list_nop_fn() {	## List functions not included in the PrimaryOperat
 			fi
 		fi
 	done
-	## No valid or invalid run_op was specified (only flag parameters or nothing).
-	run_print_help
+
+	## Parse config file after parameters, so path can be specified via C.L.I.
+	if [[ -v 'config_file' ]]; then
+		## Config file path was specified via C.L.I.
+		## Abort script if the file can not be found.
+
+		## Hack around Bash mistaking flags for variable assignment.
+		## https://stackoverflow.com/questions/51713759/bash-tilde-not-expanding-in-certain-arguments-such-as-home-dir/51713895#51713895
+		if [[ "${config_file:0:2}" == '~/' ]]; then
+			config_file=~/"${config_file:2}"
+		fi
+
+		if [[ ! -f "$config_file" ]]; then
+			echo "Specified config file does not exist: \"$config_file\""
+			exit 1
+		fi
+		parse_config_file "$config_file" || exit
+	else
+		## Config file path was not specified via C.L.I.
+		## Attempt to load config from default file path.
+		if [[ -v 'XDG_CONFIG_HOME' && -n "$XDG_CONFIG_HOME" ]]; then
+			## assert [[ "${XDG_CONFIG_HOME:-1:1}" != '/' ]]
+			config_file="$XDG_CONFIG_HOME/remarkable-ssh.conf"
+		else
+			## Unquoted for tilde expansion.
+			config_file=~/'.config/remarkable-ssh.conf'
+		fi
+		if [[ -f "$config_file" ]]; then
+			parse_config_file "$config_file" || exit
+		fi
+	fi
+
+	if [[ -R 'run_op' ]]; then
+		## Run the specified operation.
+		"$run_op" "$@"
+	else
+		## No valid or invalid run_op was specified (only flag parameters or nothing).
+		run_print_help
+	fi
 }
