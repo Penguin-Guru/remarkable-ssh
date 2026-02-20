@@ -854,13 +854,11 @@ function handle_param_source_script() {
 
 #
 ##
-### Main:
-##
-#
-{
-	set -o errexit	## Terminate on first error.
+### Start:
+function main() {
+	set -o errexit     ## Terminate on first error.
 	set -o nounset
-	shopt -s nullglob	## Ignore globs/wildcards that match nothing.
+	shopt -s nullglob  ## Ignore globs/wildcards that match nothing.
 
 	## Parameters are declared as global variables (if not already in use).
 	## String values provided at run-time are assigned to their respective variable.
@@ -871,7 +869,7 @@ function handle_param_source_script() {
 
 	##   Key: Argument string to identify parameter.
 	## Value: Name of handler function OR script-global variable to assign.
-	declare -A MainParams=(	## Declared as script-global variables (if not already in use).
+	local -A MainParams=(	## Declared as script-global variables (if not already in use).
 		[cache]='cache'                          ## String: Path to cache directory.
 		[host]='host'                            ## String: S.S.H. host value for Remarkable device.
 		[config]='config_file'                   ## String: Path to optional config file.
@@ -895,7 +893,7 @@ function handle_param_source_script() {
 	## Map C.L.I. arguments to operational run modes.
 	## 	Key: Argument string to invoke call.
 	## 	Val: Handler function name.
-	declare -A PrimaryOperations=(
+	local -A PrimaryOperations=(
 		[cache]='run_cache'
 		[list]='run_list_directory'
 		[delete]='run_delete'
@@ -908,7 +906,7 @@ function handle_param_source_script() {
 
 	declare -n -g valid_ops='PrimaryOperations'
 	declare -n -g valid_params='MainParams'
-	declare -n run_op
+	local -n run_op
 
 	## Parse positional, C.L.I. arguments.
 	for arg in "$@"; do
@@ -976,3 +974,5 @@ function handle_param_source_script() {
 		run_print_help
 	fi
 }
+main "$@"	## Yes, this is silly. If you don't like it, you can change it.
+
