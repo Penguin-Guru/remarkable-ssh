@@ -429,33 +429,32 @@ function run_cache() {	## Operations relating the local cache and remote device.
 		[diff]='diff_cache'
 	)
 	if [[ -v '1' ]]; then
-		if [[ -n "$1" && -v "Operations[${1,,}]" ]]; then
-			local cmd="${Operations[${1,,}]}"
-			if is_function_defined "$cmd"; then
-				## Handle default false parameters that disable default behaviour.
-				if ! get_param 'only_add' || get_param 'no_delete'; then
-					## Enable deletion of extraneous receiver-side things.
-					## This does not include unsupported files (see below).
-					SyncParams+=('--delete')
-				fi >/dev/null
-				if ! get_param 'unsupported_files' >/dev/null; then
-					## Direct rsync to...
-					## Ignore unsupported file types.
-					for ext in "${RmFileExt[@]}" "${RmSupportedImportFileExt[@]}"; do
-						SyncParams+=("-f+ *.$ext")
-					done
-					SyncParams+=('-fH,! */')
-					## Delete empty directories.
-					## These likely only contained unsupported file types.
-					SyncParams+=('--prune-empty-dirs')
-				fi
-
-				shift
-				"$cmd" "$@"
-				return "$?"
+		local silly_buff="${1,,}"	## Namerefs do not support positional arguments.
+		local -n run_op='silly_buff'
+		if get_op 'run_op' 'Operations'; then
+			## Handle default false parameters that disable default behaviour.
+			if ! get_param 'only_add' || get_param 'no_delete'; then
+				## Enable deletion of extraneous receiver-side things.
+				## This does not include unsupported files (see below).
+				SyncParams+=('--delete')
+			fi >/dev/null
+			if ! get_param 'unsupported_files' >/dev/null; then
+				## Direct rsync to...
+				## Ignore unsupported file types.
+				for ext in "${RmFileExt[@]}" "${RmSupportedImportFileExt[@]}"; do
+					SyncParams+=("-f+ *.$ext")
+				done
+				SyncParams+=('-fH,! */')
+				## Delete empty directories.
+				## These likely only contained unsupported file types.
+				SyncParams+=('--prune-empty-dirs')
 			fi
+
+			shift
+			"$run_op" "$@"
+			return "$?"
 		fi
-		if [[ "${1,,}" != 'help' ]]; then
+		if [[ "$silly_buff" != 'help' ]]; then
 			echo "Invalid cache operation: \"$1\"" >&2
 		fi
 	fi
@@ -689,6 +688,33 @@ function load_param_set() {
 	done
 }
 
+#function load_op_set() {
+#	declare -g -n valid_ops="$1"
+#	for o in "${valid_ops[@]}"; do
+#		if is_function_defined "$o"; then continue; fi
+#		echo -ne \
+#			"Failed to load operation set: \"$1\"\n" \
+#			"\tUndefined function: \"$o\"\n" \
+#			>&2
+#		terminate
+#	done
+#}
+
+function get_op() {
+	## $1: nameref assigned to variable containing the operation name.
+	## 	Variable must not be a positional argument.
+	## $2: (Optional) array to search through.
+	local -n op="${1,,}"
+	local -n ops_arr="${2-valid_ops}"
+	if [[ -v "ops_arr["$op"]" ]]; then
+		op="${ops_arr["$op"]}"
+		if is_function_defined "$op"; then return 0; fi
+		echo "No function defined for valid operation: \"${!op}\"" >&2
+		terminate
+	fi
+	return 1
+}
+
 
 #
 ## Parsing helper functions:
@@ -909,26 +935,18 @@ function main() {
 		[move]='run_move'
 		[help]='run_print_help'
 	)
-
 	declare -n -g valid_ops='Operations'
-	local -n run_op
 
 	## Parse positional, C.L.I. arguments.
 	for arg in "$@"; do
 		shift
+		## Parameter values must remain case sensitive.
 		if parse_flag "$arg"; then continue; fi
-		## Argument is not a flag (prefixed with one or more hyphens).
-		## It should be an operation, if valid.
-		arg="${arg,,}"	## No need for case sensitivity in command namespace.
-		if
-			## First condition supports shell with `set -u`/`set -o nounset` enabled.
-			[[ -v "valid_ops["$arg"]" ]] \
-			&& is_function_defined "${valid_ops["$arg"]}"
-		then
-			run_op="valid_ops["$arg"]"
-			## Only accept one operation per invocation of this script.
-			break
-		fi
+		## Argument is not a flag. It should be an operation.
+		## No need for case sensitivity in operation namespace.
+		## Only accept one operation per script invocation.
+		local -n run_op='arg'
+		if get_op 'run_op'; then break; fi
 		echo "Invalid operation: \"$arg\"" >&2
 		print_options "${!valid_ops}" 'Operations'
 		terminate
