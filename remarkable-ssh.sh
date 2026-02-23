@@ -307,6 +307,12 @@ function get_preferred_labels() {	## Print keys from an associative or values fr
 	esac
 }
 
+print_err_ifn_help() {
+	if [[ "$1" != 'help' ]]; then
+		echo "$2" >&2
+	fi
+}
+
 
 #
 ## Filesystem utility functions:
@@ -454,9 +460,7 @@ function run_cache() {	## Operations relating the local cache and remote device.
 			"$run_op" "$@"
 			return "$?"
 		fi
-		if [[ "$silly_buff" != 'help' ]]; then
-			echo "Invalid cache operation: \"$1\"" >&2
-		fi
+		print_err_ifn_help "$silly_buff" "Invalid cache operation: \"$1\""
 	fi
 	local -n ptr='Operations'
 	print_options "${!ptr}" 'Operations'
