@@ -468,6 +468,12 @@ function run_cache() {	## Operations relating the local cache and remote device.
 }
 
 function run_list_directory() {	## Enumerate contents of a Remarkable folder object (in the cache).
+	if [[ -v '1' && "$1" == 'help' ]]; then
+		print_valid_args \
+			'Target folder          (default: document root)' \
+			'Recursive depth limit  (default: unlimited)'
+	fi
+
 	local parent="${1:-/}"
 		## Initially name; uuid for recursive calls.
 		## Default to document root ("/" --> "").
@@ -537,6 +543,11 @@ function run_list_directory() {	## Enumerate contents of a Remarkable folder obj
 }
 
 function run_delete() {	## Delete a Remarkable object's file(s) (from the cache).
+	if [[ -v '1' && "$1" == 'help' ]]; then
+		print_valid_args 'Target object'
+		return
+	fi
+
 	local target="$1"
 	validate_string_not_empty "$target" "Missing parameter expected: target object"
 	validate_cache "$cache"
@@ -552,6 +563,13 @@ function run_delete() {	## Delete a Remarkable object's file(s) (from the cache)
 }
 
 function run_mkdir() {	## Make a Remarkable folder object (not filesystem directory) (in the cache).
+	if [[ -v '1' && "$1" == 'help' ]]; then
+		print_valid_args \
+			'Name of new folder' \
+			'Parent directory       (default: document root)'
+		return
+	fi
+
 	local dir_name="$1"
 	local parent_uuid="$(accept_uuid_or_name "$cache" "$2")"
 	validate_string_not_empty "$dir_name"
@@ -561,6 +579,11 @@ function run_mkdir() {	## Make a Remarkable folder object (not filesystem direct
 }
 
 function run_add_file() {	## Copy a supported file type (from anywhere) as/into a new Remarkable object (in the cache).
+	if [[ -v '1' && "$1" == 'help' ]]; then
+		print_valid_args 'Path to file'
+		return
+	fi
+
 	local file_src="$1"
 	local parent_uuid="$(accept_uuid_or_name "$cache" "$2")"
 	if [[ ! -f "$file_src" ]]; then
@@ -606,6 +629,13 @@ function run_add_file() {	## Copy a supported file type (from anywhere) as/into 
 }
 
 function run_rename() {	## Change the visible name associated with a Remarkable object (in the cache).
+	if [[ -v '1' && "$1" == 'help' ]]; then
+		print_valid_args \
+			'Object to rename' \
+			'New name for object'
+		return
+	fi
+
 	local target="$(accept_uuid_or_name "$cache" "$1")"
 	local new_name="$2"
 	validate_string_not_empty "$target"
@@ -617,6 +647,13 @@ function run_rename() {	## Change the visible name associated with a Remarkable 
 }
 
 function run_move() {	## Change the parent directory associated with a Remarkable object (in the cache).
+	if [[ -v '1' && "$1" == 'help' ]]; then
+		print_valid_args \
+			'Object to move' \
+			'New parent folder'
+		return
+	fi
+
 	local target="$(accept_uuid_or_name "$cache" "$1")"
 	local new_parent="$(accept_uuid_or_name "$cache" "$2")"
 	validate_string_not_empty "$target"
@@ -641,6 +678,17 @@ function print_options() {
 	while read -r item; do
 		echo -e "\t$item"
 	done < <(get_preferred_labels "${!valid}")
+}
+
+function print_valid_args() {
+	local -a valid_args=()
+	local -i i=1
+	for a in "$@"; do
+		valid_args+=("$i: $a")
+		i+=1
+	done
+	if ((${#valid_args[@]} == 0)); then terminate; fi
+	print_options 'valid_args' 'Arguments'
 }
 
 function run_print_help() {
