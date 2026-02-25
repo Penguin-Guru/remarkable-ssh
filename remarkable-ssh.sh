@@ -51,6 +51,36 @@ declare -a RmSupportedImportFileExt=(	## File types Xochitl can import.
 )
 
 
+#
+## Help output:
+#
+
+declare -a help_sections=(
+	'main'
+)
+for s in "${help_sections[@]}"; do
+	declare -a "${s}_help_text"='()'
+done
+
+read -r -d '' main_help_text <<- 'EOF'
+	It should be safe to run operations with missing parameters.
+	When one is missing, you will be told what the next parameter field should be.
+	Many functions define variables of questionable utility as an attempt at documentation.
+
+	Only `cache` operations interact with the remote device.
+	The only operation that attempts to modify the remote device is `cache push`.
+	No effort is made to avoid incidental modification, like updating file access timestamps.
+	Running `cache push` will, upon completion, restart the remote device's xochitl service.
+
+	Synchronisation (`cache push`/`cache pull`) is performed using rsync.
+	These operations will delete anything on the receiving side that is not on the sending side!
+	Sync behaviour can be adjusted by editing the "SyncParams" variable at the top of this script.
+
+	Almost all operations require the "cache" parameter to have been set.
+	`Cache` operations also require the "host" parameter, corresponding to your S.S.H. host.
+EOF
+
+
 
 #
 ##
@@ -367,18 +397,56 @@ function add_metadata_file() {	## Create metadata file in cache.
 
 
 function pull_cache() {	## Pull remote device to local cache.
-	if (($#)) && [[ "$1" == 'diff' ]]; then
-		echo -e 'Format is described in the rsync manual. See "--itemize-changes".\n'
-		SyncParams+=("${DiffSyncParams[@]}")
+	if (($#)); then
+		local -i print_help=0
+		local -i err=0
+		case $1 in
+			diff)
+				echo -e 'Format is described in the rsync manual. See "--itemize-changes".\n'
+				SyncParams+=("${DiffSyncParams[@]}")
+				;;
+			help)	print_help=1 ;;
+			*)
+				echo "Invalid sub-operation: \"$1\"" >&2
+				print_help=1
+				err=1
+				;;
+		esac
+		if ((print_help)); then
+			local -A Operations=(
+				'diff'
+			)
+			print_help 'Adjust cache directory to match tablet.' '' 'Operations'
+			if ((err)); then terminate; fi
+			return
+		fi
 	fi
 	## Copy contents of remote directory, not the directory including its contents.
 	rsync "${SyncParams[@]}" "$host:$XochitlDir/" "$cache"
 }
 
 function push_cache() {	## Push local cache to remote device.
-	if (($#)) && [[ "$1" == 'diff' ]]; then
-		echo -e 'Format is described in the rsync manual. See "--itemize-changes".\n'
-		rsync "${SyncParams[@]}" "${DiffSyncParams[@]}" "$cache/" "$host:$XochitlDir" || return 1
+	if (($#)); then
+		local -i err=0
+		case $1 in
+			diff)
+				echo -e 'Format is described in the rsync manual. See "--itemize-changes".\n'
+				rsync "${SyncParams[@]}" "${DiffSyncParams[@]}" "$cache/" "$host:$XochitlDir"
+				return
+				;;
+			help)	;;
+			*)
+				echo "Invalid sub-operation: \"$1\"" >&2
+				err=1
+				;;
+		esac
+		local -A Operations=(
+			'diff'
+		)
+		print_help 'Adjust tablet to match cache directory.' '' 'Operations'
+		if ((err)); then terminate
+		else return
+		fi
 	else
 		ssh "$host" systemctl stop xochitl || {
 			echo 'Failed to stop remote device service: xochitl' >&2
@@ -393,6 +461,17 @@ function push_cache() {	## Push local cache to remote device.
 }
 
 function diff_cache() {	## Compare local cache to remote device.
+	if [[ -v '1' ]]; then
+		local -i err=0
+		if [[ "$1" != 'help' ]]; then
+			echo "Invalid sub-operation: \"$1\"" >&2
+			err=1
+		fi
+		print_help 'Output table of differences between tablet and cache directory.' '' ''
+		if ((err)); then terminate; fi
+		return 0
+	fi
+
 	## Strip at most one trailing forward slash from the paths, if present.
 	## This is necessary because we append a slash during the path truncation.
 	local cache="${cache/%\/}"
@@ -462,8 +541,11 @@ function run_cache() {	## Operations relating the local cache and remote device.
 		fi
 		print_err_ifn_help "$silly_buff" "Invalid cache operation: \"$1\""
 	fi
-	local -n ptr='Operations'
-	print_options "${!ptr}" 'Operations'
+	if [[ -v '2' && -v "Operations["$2"]" ]]; then
+		"${Operations["$2"]}" 'help'
+	else
+		print_help 'Cache scope operations affect or relate to the entire cache directory.' '' 'Operations'
+	fi
 	terminate
 }
 
@@ -664,6 +746,33 @@ function run_move() {	## Change the parent directory associated with a Remarkabl
 	jq ".parent = \"$new_parent\"" "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
 }
 
+function run_print_help() {
+	if ((${#@} == 0)); then
+		print_help
+		return
+	fi
+
+	## Traverse potential chain of operations.
+	local -i shift_by
+	local help_section=
+	while
+		parse_positional_args 'next_op' "$@"
+		shift_by="$?"
+		#(( shift_by++ > 0 ))	## ++ to start next iteration after current section.
+		((0 < shift_by && shift_by < 255))
+	do
+		help_section="$next_op"
+		shift "$shift_by" || break	## Break if past last.
+	done
+
+	if [[ -n "$help_section" ]]; then
+		"$help_section" "$@" 'help'
+	else
+		echo -e '\nNo help is available for that query. The target probably does not exist.\n' >&2
+		terminate
+	fi
+}
+
 
 #
 ## Meta-operations:
@@ -691,35 +800,28 @@ function print_valid_args() {
 	print_options 'valid_args' 'Arguments'
 }
 
-function run_print_help() {
-	echo -e "\nSYNTAX: \`${0##*/} [Flag]... <Operation>\`\n" \
-		" Operation: \`<name> [(scoped) Flag]... [(sub-)Operation]\`\n" \
-		" Flag: \`-[-]<parameter>[=<value>]\`\n"
-	cat <<- EOF
-
-
-		It should be safe to run operations with missing parameters.
-		When one is missing, you will be told what the next parameter field should be.
-		Many functions define variables of questionable utility as an attempt at documentation.
-
-		Only \`cache\` operations interact with the remote device.
-		The only operation that attempts to modify the remote device is \`cache push\`.
-		No effort is made to avoid incidental modification, like updating file access timestamps.
-		Running \`cache push\` will, upon completion, restart the remote device's xochitl service.
-
-		Synchronisation (\`cache push\`/\`cache pull\`) is performed using rsync.
-		These operations will delete anything on the receiving side that is not on the sending side!
-		Sync behaviour can be adjusted by editing the "SyncParams" variable at the top of this script.
-
-		Almost all operations require the "cache" parameter to have been set.
-		\`Cache\` operations also require the "host" parameter, corresponding to your S.S.H. host.
-
-
-	EOF
-	print_options "${!valid_params}" 'Parameters'
-	echo
-	print_options "${!valid_ops}" 'Operations'
-	echo
+function print_help() {
+	## Variables allow for flexible argument order, accommodating default values.
+	local -r help_text="${1-${main_help_text[@]}}"
+	local -r valid_params="${2-${!valid_params}}"  ## Nameref.
+	local -r valid_ops="${3-${!valid_ops}}"        ## Nameref.
+	if ((! ${#@})); then	## No arguments to this function call-- assume main help section.
+		echo -ne "\nSYNTAX: \`${0##*/} [Flag]... <Operation>\`\n" \
+			" Operation: \`<name> [(scoped) Flag]... [(sub-)Operation]\`\n" \
+			" Flag: \`-[-]<parameter>[=<value>]\`\n\n"
+	fi
+	if [[ -n "$help_text" ]]; then
+		echo -ne "\n$help_text\n\n\n"
+	else echo
+	fi
+	if [[ -n "$valid_params" ]]; then
+		print_options "$valid_params" 'Parameters'
+		echo
+	fi
+	if [[ -n "$valid_ops" ]]; then
+		print_options "$valid_ops" 'Operations'
+		echo
+	fi
 }
 
 
@@ -878,6 +980,29 @@ function parse_config_file() {
 	done < "$config_file"
 }
 
+function parse_positional_args() {	## Parse positional, C.L.I. arguments.
+	local op_var_name="$1"
+	shift
+	if (( ${#@} == 0 )); then
+		return 255	## Error status.
+	fi
+	local -i shift_offset=0
+	for arg in "$@"; do
+		shift; shift_offset+=1
+		## Parameter values must remain case sensitive.
+		if parse_flag "$arg"; then continue; fi
+		## Argument is not a flag. It should be an operation.
+		## No need for case sensitivity in operation namespace.
+		## Only accept one operation per script invocation.
+		declare -g -n "$op_var_name"='arg'
+		if get_op "${op_var_name}"; then return "$shift_offset"; fi
+		unset -v -n "$op_var_name"
+		return 255	## Error status.
+	done
+	## assert (( shift_offset == 0 ))
+	return 0	## No operation found.
+}
+
 
 #
 ## Parameter handler functions:
@@ -989,20 +1114,22 @@ function main() {
 	)
 	declare -n -g valid_ops='Operations'
 
-	## Parse positional, C.L.I. arguments.
-	for arg in "$@"; do
-		shift
-		## Parameter values must remain case sensitive.
-		if parse_flag "$arg"; then continue; fi
-		## Argument is not a flag. It should be an operation.
-		## No need for case sensitivity in operation namespace.
-		## Only accept one operation per script invocation.
-		local -n run_op='arg'
-		if get_op 'run_op'; then break; fi
-		echo "Invalid operation: \"$arg\"" >&2
-		print_options "${!valid_ops}" 'Operations'
-		terminate
-	done
+	{
+		local -i shift_by=0
+		parse_positional_args 'run_op' "$@" || shift_by="$?"
+		if (( 0 < shift_by && shift_by < 255 )); then shift "$shift_by"; fi
+	}
+	if [[ ! -R 'run_op' ]]; then
+		## No valid or invalid run_op was specified (only flag parameters or nothing).
+
+		if ((shift_by == 0)); then
+			run_print_help
+		else
+			echo "Invalid operation: \"$arg\"" >&2
+			print_options "${!valid_ops}" 'Operations'
+		fi
+		exit 1
+	fi
 
 	## Parse config file after parameters, so path can be specified via C.L.I.
 	if [[ -v 'config_file' ]]; then
@@ -1035,13 +1162,8 @@ function main() {
 		fi
 	fi
 
-	if [[ -R 'run_op' ]]; then
-		## Run the specified operation.
-		"$run_op" "$@"
-	else
-		## No valid or invalid run_op was specified (only flag parameters or nothing).
-		run_print_help
-	fi
+	## Run the specified operation.
+	"$run_op" "$@"
 }
 main "$@"	## Yes, this is silly. If you don't like it, you can change it.
 
