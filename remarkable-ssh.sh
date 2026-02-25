@@ -469,8 +469,8 @@ function run_list_directory() {	## Enumerate contents of a Remarkable folder obj
 		## Initially name; uuid for recursive calls.
 		## Default to document root ("/" --> "").
 	local -i recursive_depth_remaining="${2:--1}"
-		## Default to 0 (no recursion).
-		## Negative for infinite (unless decrement overflows).
+		## Default to -1.
+		## Negative values for infinite recursion (unless decrement overflows).
 		## This may or may not have fork bomb potential.
 	local -i initial_recursion_depth_limit="${3:-$recursive_depth_remaining}"
 	validate_string_not_empty "$parent"
