@@ -827,6 +827,7 @@ function print_help() {
 		print_options "$valid_ops" 'Operations'
 		echo
 	fi
+	return 0
 }
 
 
