@@ -759,15 +759,14 @@ function run_print_help() {
 	fi
 
 	## Traverse potential chain of operations.
-	local -i shift_by
 	local help_section=
+	local next_op=
+	local -i shift_by
 	while
-		parse_positional_args 'next_op' "$@"
-		shift_by="$?"
-		#(( shift_by++ > 0 ))	## ++ to start next iteration after current section.
-		((0 < shift_by && shift_by < 255))
+		parse_positional_args 'next_op' 'shift_by' "$@" \
+		&& test -v 'next_op'
 	do
-		help_section="$next_op"
+		help_section="$next_op"	## Cache in case previous was last.
 		shift "$shift_by" || break	## Break if past last.
 	done
 
@@ -990,27 +989,30 @@ function parse_config_file() {
 }
 
 function parse_positional_args() {	## Parse positional, C.L.I. arguments.
-	local op_var_name="$1"
-	shift
-	if (( ${#@} == 0 )); then
-		return 255	## Error status.
+	local -n op_ref="$1"  ## First (valid) operation in array.
+	local -n offset="$2"  ## Offset count from first arg to first op.
+	shift 2
+	offset=0
+
+	if (( "${#@}" == 0 )); then
+		unset op_ref
+		return 0
 	fi
+
 	local -r FlagPrefixSymbol='-'
-	local -i shift_offset=0
-	for arg in "$@"; do
-		shift; shift_offset+=1
-		## Parameter values must remain case sensitive.
+	for arg in "$@"; do	## Parameter values must remain case sensitive.
+		offset+=1
 		if parse_flag "$arg"; then continue; fi
 		## Argument is not a flag. It should be an operation.
 		## No need for case sensitivity in operation namespace.
 		## Only accept one operation per script invocation.
-		declare -g -n "$op_var_name"='arg'
-		if get_op "${op_var_name}"; then return "$shift_offset"; fi
-		unset -v -n "$op_var_name"
-		return 255	## Error status.
+		#if get_op "$arg"; then op_ref="$arg"; break; fi
+		op_ref="$arg"	## get_op only supports reference type.
+		if get_op "${!op_ref}"; then break; fi
+		## Invalid operation.
+		unset op_ref
+		return 1
 	done
-	## assert (( shift_offset == 0 ))
-	return 0	## No operation found.
 }
 
 
@@ -1125,11 +1127,12 @@ function main() {
 	declare -n -g valid_ops='Operations'
 
 	{
-		local -i shift_by=0
-		parse_positional_args 'run_op' "$@" || shift_by="$?"
-		if (( 0 < shift_by && shift_by < 255 )); then shift "$shift_by"; fi
+		local run_op=
+		local -i shift_by
+		if ! parse_positional_args 'run_op' 'shift_by' "$@"; then exit 1; fi
+		shift "$shift_by"
 	}
-	if [[ ! -R 'run_op' ]]; then
+	if [[ ! -v 'run_op' ]]; then
 		## No valid or invalid run_op was specified (only flag parameters or nothing).
 
 		if ((shift_by == 0)); then
