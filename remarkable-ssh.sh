@@ -337,12 +337,6 @@ function get_preferred_labels() {	## Print keys from an associative or values fr
 	esac
 }
 
-print_err_ifn_help() {
-	if [[ "$1" != 'help' ]]; then
-		echo "$2" >&2
-	fi
-}
-
 
 #
 ## Filesystem utility functions:
@@ -513,10 +507,12 @@ function run_cache() {	## Operations relating the local cache and remote device.
 		[pull]='pull_cache'
 		[diff]='diff_cache'
 	)
+	local -i err
 	if [[ -v '1' ]]; then
 		local silly_buff="${1,,}"	## Namerefs do not support positional arguments.
 		local -n run_op='silly_buff'
 		if get_op 'run_op' 'Operations'; then
+			err=0
 			## Handle default false parameters that disable default behaviour.
 			if ! get_param 'only_add' || get_param 'no_delete'; then
 				## Enable deletion of extraneous receiver-side things.
@@ -539,14 +535,24 @@ function run_cache() {	## Operations relating the local cache and remote device.
 			"$run_op" "$@"
 			return "$?"
 		fi
-		print_err_ifn_help "$silly_buff" "Invalid cache operation: \"$1\""
+		## Else:
+		if [[ "$1" == 'help' ]]; then err=0
+		else
+			err=1
+			echo "Invalid cache operation: \"$1\""
+		fi
+	else err=1	## [[ ! -v '1' ]]
 	fi
+
 	if [[ -v '2' && -v "Operations["$2"]" ]]; then
 		"${Operations["$2"]}" 'help'
 	else
 		print_help 'Cache scope operations affect or relate to the entire cache directory.' '' 'Operations'
 	fi
-	terminate
+
+	if ((err)); then terminate
+	else return 0
+	fi
 }
 
 function run_list_directory() {	## Enumerate contents of a Remarkable folder object (in the cache).
