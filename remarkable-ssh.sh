@@ -927,27 +927,30 @@ function parse_param() {
 	}
 }
 
-
-function parse_flag() {
-	## $1: Flag string, including prefix, delimiter, and value if applicable.
-
-	## Count length of flag prefix.
-	local FlagPrefixSymbol='-'
-	local -i i=0
+function count_flag_prefix_length() {
+	## $1: Target string, which may or may not start with a flag prefix.
+	## $2: Nameref to caller variable for counting.
+	local -n i="$2" ; i=0
 	while [[ "${1:$i:1}" == "$FlagPrefixSymbol" ]]; do
 		i+=1
 		if (( $i > 2 )); then
-			echo "Invalid prefix ($i+) for supposed flag: \"$1\""
+			echo "Invalid prefix ($i+) for supposed flag: \"$1\"" >&2
 			terminate
 		fi
 	done
-	if ((i == 0)); then return 1; fi
+}
+function parse_flag() {
+	## $1: Flag string, including prefix, delimiter, and value if applicable.
+
+	local -i prefix_offset	## Assigned zero later.
+	count_flag_prefix_length "$1" 'prefix_offset'
+	if ((prefix_offset == 0)); then return 1; fi
 
 	local key
 	local val=
 	local FlagKeyValDelim='='
 
-	IFS="$FlagKeyValDelim" read -r key val <<< "${1:$i}" || {
+	IFS="$FlagKeyValDelim" read -r key val <<< "${1:$prefix_offset}" || {
 		echo "Failed to parse flag parameter: \"$1\"" >&2
 		terminate
 	}
@@ -986,6 +989,7 @@ function parse_positional_args() {	## Parse positional, C.L.I. arguments.
 	if (( ${#@} == 0 )); then
 		return 255	## Error status.
 	fi
+	local -r FlagPrefixSymbol='-'
 	local -i shift_offset=0
 	for arg in "$@"; do
 		shift; shift_offset+=1
