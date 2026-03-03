@@ -481,7 +481,15 @@ function diff_cache() {	## Compare local cache to remote device.
 	local sanitised_xochitl_dir=$(sed 's:[][\\/.^$*]:\\&:g' <<< "${xochitl_dir@E}")
 	## The strings above are used to trim file paths to target directories.
 	## If "cache" has a parent directory with the same name, truncation may end there.
-	#
+
+	## Cache remote list as array so we can act upon SSH failure.
+	local -a remote_lines
+	readarray -t remote_lines < <("${SshCmd[@]}" "$host" "find \"$xochitl_dir\" -type f -exec md5sum {} + | sort -k 2 | sed 's/ .*${sanitised_xochitl_dir}\// /'")
+	wait "$!" || {
+		echo 'SSH connection failed.'
+		terminate
+	}
+
 	## Sed is also used to suppress lines for unchanged items and to cut out checksum strings.
 	diff --width="$(tput cols)" --suppress-common-lines \
 		--old-line-format='	%l	<++-->	.
@@ -489,7 +497,7 @@ function diff_cache() {	## Compare local cache to remote device.
 ' --unchanged-line-format='	.	.	.
 ' \
 		<(find "$cache" -type f -exec md5sum {} + | sort -k 2 | sed "s/ .*${sanitised_cache}\// /") \
-		<("${SshCmd[@]}" "$host" "find \"$xochitl_dir\" -type f -exec md5sum {} + | sort -k 2 | sed 's/ .*${sanitised_xochitl_dir}\// /'") \
+		<(printf '%s\n' "${remote_lines[@]}") \
 		| sed -E '/^[[:space:].]*$/d; s/((^|>)\s*)[[[:lower:][:digit:]]+ +/\1/' \
 		| column -t --output-separator='		' \
 			-C name="Local cache",right \
