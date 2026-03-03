@@ -24,6 +24,11 @@ declare -a DiffSyncParams=(	## For checking what rsync would do if run.
 	'--itemize-changes'
 )
 
+declare -a SshCmd=(
+	'ssh'
+	'-o' 'ConnectTimeout 3'
+)
+
 
 #
 ## Remarkable implementation:
@@ -442,12 +447,12 @@ function push_cache() {	## Push local cache to remote device.
 		else return
 		fi
 	else
-		ssh "$host" systemctl stop xochitl || {
+		"${SshCmd[@]}" "$host" systemctl stop xochitl || {
 			echo 'Failed to stop remote device service: xochitl' >&2
 			terminate
 		}
 		rsync "${SyncParams[@]}" "$cache/" "$host:$XochitlDir" || return 1
-		ssh "$host" systemctl start xochitl || {
+		"${SshCmd[@]}" "$host" systemctl start xochitl || {
 			echo 'Failed to start remote device service: xochitl' >&2
 			terminate
 		}
@@ -484,7 +489,7 @@ function diff_cache() {	## Compare local cache to remote device.
 ' --unchanged-line-format='	.	.	.
 ' \
 		<(find "$cache" -type f -exec md5sum {} + | sort -k 2 | sed "s/ .*${sanitised_cache}\// /") \
-		<(ssh "$host" "find \"$xochitl_dir\" -type f -exec md5sum {} + | sort -k 2 | sed 's/ .*${sanitised_xochitl_dir}\// /'") \
+		<("${SshCmd[@]}" "$host" "find \"$xochitl_dir\" -type f -exec md5sum {} + | sort -k 2 | sed 's/ .*${sanitised_xochitl_dir}\// /'") \
 		| sed -E '/^[[:space:].]*$/d; s/((^|>)\s*)[[[:lower:][:digit:]]+ +/\1/' \
 		| column -t --output-separator='		' \
 			-C name="Local cache",right \
