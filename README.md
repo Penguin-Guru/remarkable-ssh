@@ -18,7 +18,7 @@ Remarkable's local A.P.I. and web interface are slow and lack essential features
 
 ## Usage:
 
-Syntax, operations, parameters, and some introductory notes are all output by `remarkable-ssh help`. In fact, the `help` is optional. What I have written here is intended to give prospective users a sense for what this script can do.
+Syntax, operations, parameters, and some introductory notes are all output by `remarkable-ssh help`. In fact, `help` is optional in that case. The `help` operation can also be specified with other operations for more topical information. What I have written here is intended to give prospective users a sense for what this script can do.
 
 ### Operations:
 
