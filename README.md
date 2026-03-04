@@ -1,10 +1,7 @@
 
 ## A Bash script to manage files on Remarkable devices via C.L.I. and S.S.H.
 
-Remarkable's local A.P.I. and web interface are slow and lack essential features. I don't like cloud services and I couldn't find a script that worked, so I wrote my own. This is a work in progress but it already works very well for me. Please report any issues-- there may be differences between product models, software versions, and personal workflows.
-
-### Known to work with:
-- Remarkable Paper Pro (3.24.0.149)
+Remarkable's local A.P.I. and web interface are slow and lack essential features. I don't like cloud services and I couldn't find a script that worked, so I wrote my own. This is a work in progress but it already works very well for me. Please report any issues or incompatibilities-- there may be differences between product models, software versions, and personal workflows. I'm not currently aware of any product models or software versions this script will not work with, but there's a [wiki page for models and versions with which it is known to work](https://github.com/Penguin-Guru/remarkable-ssh/wiki/Known-To-Work-with).
 
 ### Dependencies:
 
