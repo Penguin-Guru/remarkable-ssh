@@ -47,7 +47,7 @@ Syntax, operations, parameters, and some introductory notes are all output by `r
 - `Only delete` removed things.
 - `Include unsupported` file types.
 
-Running `cache push` or `cache push` without any sync-related parameters will perform a full sync, including additions, deletions, and updates. Only updates can be achieved by specifying both `--no-add` and `--no-delete`.
+Running `cache push` or `cache pull` without any sync-related parameters will perform a full sync, including additions, deletions, and updates. Only updates can be achieved by specifying both `--no-add` and `--no-delete`.
 
 
 ## Set-up:
