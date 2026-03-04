@@ -817,9 +817,7 @@ function run_print_help() {
 function print_options() {
 	local -n valid="$1"
 	local subject="${2,,}"
-	## assert("${subject:-1:1}" == "s")
-
-	echo "${subject@u} available at this scope:"
+	echo "${subject@u}:"
 	while read -r item; do
 		echo -e "\t$item"
 	done < <(get_preferred_labels "${!valid}")
@@ -833,7 +831,7 @@ function print_valid_args() {
 		i+=1
 	done
 	if ((${#valid_args[@]} == 0)); then terminate; fi
-	print_options 'valid_args' 'Arguments'
+	print_options 'valid_args' 'Arguments expected/accepted'
 }
 
 function print_help() {
@@ -851,11 +849,11 @@ function print_help() {
 	else echo
 	fi
 	if [[ -n "$valid_params" ]]; then
-		print_options "$valid_params" 'Parameters'
+		print_options "$valid_params" 'Parameters available at this scope'
 		echo
 	fi
 	if [[ -n "$valid_ops" ]]; then
-		print_options "$valid_ops" 'Operations'
+		print_options "$valid_ops" 'Operations available at this scope'
 		echo
 	fi
 	return 0
@@ -1171,7 +1169,7 @@ function main() {
 			run_print_help
 		else
 			echo "Invalid operation: \"$arg\"" >&2
-			print_options "${!valid_ops}" 'Operations'
+			print_options "${!valid_ops}" 'Operations available at this scope'
 		fi
 		exit 1
 	fi
