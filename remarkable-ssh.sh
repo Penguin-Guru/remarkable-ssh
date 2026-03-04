@@ -569,7 +569,10 @@ function run_cache() {	## Operations relating the local cache and remote device.
 }
 
 function run_list_directory() {	## Enumerate contents of a Remarkable folder object (in the cache).
-	if [[ -v '1' && "$1" == 'help' ]]; then
+	if [[
+		! -v '1' \
+		|| "$1" == 'help'
+	]]; then
 		print_valid_args \
 			'Target folder          (default: document root)' \
 			'Recursive depth limit  (default: unlimited)'
@@ -644,7 +647,10 @@ function run_list_directory() {	## Enumerate contents of a Remarkable folder obj
 }
 
 function run_delete() {	## Delete a Remarkable object's file(s) (from the cache).
-	if [[ -v '1' && "$1" == 'help' ]]; then
+	if [[
+		! -v '1' \
+		|| "$1" == 'help'
+	]]; then
 		print_valid_args 'Target object'
 		return
 	fi
@@ -664,7 +670,10 @@ function run_delete() {	## Delete a Remarkable object's file(s) (from the cache)
 }
 
 function run_mkdir() {	## Make a Remarkable folder object (not filesystem directory) (in the cache).
-	if [[ -v '1' && "$1" == 'help' ]]; then
+	if [[
+		! -v '1' \
+		|| "$1" == 'help'
+	]]; then
 		print_valid_args \
 			'Name of new folder' \
 			'Parent directory       (default: document root)'
@@ -680,7 +689,10 @@ function run_mkdir() {	## Make a Remarkable folder object (not filesystem direct
 }
 
 function run_add_file() {	## Copy a supported file type (from anywhere) as/into a new Remarkable object (in the cache).
-	if [[ -v '1' && "$1" == 'help' ]]; then
+	if [[
+		! -v '1' \
+		|| "$1" == 'help'
+	]]; then
 		print_valid_args 'Path to file'
 		return
 	fi
@@ -730,7 +742,10 @@ function run_add_file() {	## Copy a supported file type (from anywhere) as/into 
 }
 
 function run_rename() {	## Change the visible name associated with a Remarkable object (in the cache).
-	if [[ -v '1' && "$1" == 'help' ]]; then
+	if [[
+		! -v '1' \
+		|| "$1" == 'help'
+	]]; then
 		print_valid_args \
 			'Object to rename' \
 			'New name for object'
@@ -748,7 +763,10 @@ function run_rename() {	## Change the visible name associated with a Remarkable 
 }
 
 function run_move() {	## Change the parent directory associated with a Remarkable object (in the cache).
-	if [[ -v '1' && "$1" == 'help' ]]; then
+	if [[
+		! -v '1' \
+		|| "$1" == 'help'
+	]]; then
 		print_valid_args \
 			'Object to move' \
 			'New parent folder'
