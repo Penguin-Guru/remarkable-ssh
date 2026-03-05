@@ -681,7 +681,7 @@ function run_mkdir() {	## Make a Remarkable folder object (not filesystem direct
 	fi
 
 	local dir_name="$1"
-	local parent_uuid="$(accept_uuid_or_name "$cache" "$2")"
+	local parent_uuid="$(accept_uuid_or_name "$cache" "${2:-/}")"	## Default to document root.
 	validate_string_not_empty "$dir_name"
 	validate_cache "$cache"
 
@@ -698,7 +698,7 @@ function run_add_file() {	## Copy a supported file type (from anywhere) as/into 
 	fi
 
 	local file_src="$1"
-	local parent_uuid="$(accept_uuid_or_name "$cache" "$2")"
+	local parent_uuid="$(accept_uuid_or_name "$cache" "${2:-/}")"	## Default to document root.
 	if [[ ! -f "$file_src" ]]; then
 		echo "Source file does not exist: \"$file_src\"" >&2
 		terminate
@@ -743,7 +743,7 @@ function run_add_file() {	## Copy a supported file type (from anywhere) as/into 
 
 function run_rename() {	## Change the visible name associated with a Remarkable object (in the cache).
 	if [[
-		! -v '1' \
+		! -v '2' \
 		|| "$1" == 'help'
 	]]; then
 		print_valid_args \
@@ -764,7 +764,7 @@ function run_rename() {	## Change the visible name associated with a Remarkable 
 
 function run_move() {	## Change the parent directory associated with a Remarkable object (in the cache).
 	if [[
-		! -v '1' \
+		! -v '2' \
 		|| "$1" == 'help'
 	]]; then
 		print_valid_args \
