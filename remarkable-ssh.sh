@@ -569,10 +569,7 @@ function run_cache() {	## Operations relating the local cache and remote device.
 }
 
 function run_list_directory() {	## Enumerate contents of a Remarkable folder object (in the cache).
-	if [[
-		! -v '1' \
-		|| "$1" == 'help'
-	]]; then
+	if [[ -v '1' && "$1" == 'help' ]]; then
 		print_valid_args \
 			'Target folder          (default: document root)' \
 			'Recursive depth limit  (default: unlimited)'
